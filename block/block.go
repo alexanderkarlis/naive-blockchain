@@ -4,10 +4,16 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"os/exec"
 )
+
+// Blocks function interface
+type Blocks interface {
+	New(data string)
+}
 
 // Block struct
 type Block struct {
@@ -19,16 +25,19 @@ type Block struct {
 	Data         string
 }
 
-// New returns a new instance of a single Block in the Blockchain.
-func New(d string) *Block {
+// Blockchain is a slice of Blocks.
+type Blockchain []Block
+
+// AddNewBlockToBlockChain returns a new instance of a single Block in the Blockchain.
+func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 	id := generateUUID()
 	index := 0
-	previousHash := ""
+	previousHash := (*bc)[len(*bc)-1].Hash
 	timeStamp := generateTimeStamp()
 	data := d
 	hash := hash256(index, previousHash, timeStamp, data)
 
-	return &Block{
+	newBlock := &Block{
 		ID:           id, // generic ID, TODO: creeate algorithm
 		Index:        index,
 		Timestamp:    timeStamp,
@@ -36,12 +45,31 @@ func New(d string) *Block {
 		Hash:         hash,
 		PreviousHash: previousHash,
 	}
+	*bc = append(*bc, *newBlock)
+
+	return *bc
+}
+
+// IsValidateBlockChain validates the active blockchain by checking previous hash
+// against current 'previous hash'.
+// Returns valid (bool) and index of problem block in chain. (-1 if blockchain is ok.)
+func (bc *Blockchain) IsValidateBlockChain() (valid bool, i int) {
+	valid = true
+	for i := 1; i < len(*bc); i++ {
+		fmt.Printf("current prev hash%v\n", (*bc)[i].PreviousHash)
+		fmt.Printf("prev hash%v\n", (*bc)[i-1].PreviousHash)
+		if (*bc)[i].PreviousHash != (*bc)[i-1].Hash {
+			valid = false
+			return valid, i
+		}
+	}
+	return valid, -1
 }
 
 // CreateGenesisBlock creates the first block in the blockchain. Has index of 0.
 func CreateGenesisBlock() *Block {
 	timeStamp := generateTimeStamp()
-	data := ""
+	data := "GENESIS BLOCK"
 	hash := hash256(0, "", timeStamp, data)
 
 	return &Block{
@@ -54,8 +82,8 @@ func CreateGenesisBlock() *Block {
 	}
 }
 
-// SetPreviousHash should be called as soon as any data on the block changes.
-func (b *Block) SetPreviousHash() *Block {
+// CheckPreviousHash should be called as soon as any data on the block changes.
+func (b *Block) CheckPreviousHash() *Block {
 	newHash := hash256(b.Index, b.PreviousHash, b.Timestamp, b.Data)
 	b.Hash = string(newHash)
 	b.PreviousHash = b.Hash
@@ -71,7 +99,8 @@ func generateUUID() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(out)
+	uuid := strings.TrimRight(string(out), "\n")
+	return uuid
 }
 
 // 256 Hashing func
