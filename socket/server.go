@@ -43,7 +43,7 @@ var (
 	addr         = flag.String("addr", "localhost:8080", "http service address")
 	genesisBlock = block.CreateGenesisBlock()
 	blockchain   = block.Blockchain{}
-	randomMsg    = make(chan []string{"hello"})
+	randomMsg    = make(chan []string)
 )
 
 // Client is the middleman between client and server.

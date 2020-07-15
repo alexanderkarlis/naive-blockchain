@@ -1,17 +1,59 @@
 import React, { useState, useEffect } from "react";
 import { TextField, Button, Box, Typography } from "@material-ui/core";
+import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert, { AlertProps } from '@material-ui/lab/Alert';
+
 import { BlockComponent } from "./block";
 import "./App.css";
 
-const socket = new WebSocket("ws://localhost:8080/broadcast");
+let socket = new WebSocket("ws://localhost:8080/broadcast")
 
-function App() {
+const Alert = (props: AlertProps) => {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
+const ConnectionStatAlert = (props) => {
+    let socketConn = props.socketConnection
+    const [open, setOpen] = useState(true);
+
+    const handleClose = (event?: React.SyntheticEvent, reason?: string) => {
+      if (reason === 'clickaway') {
+        return;
+      }
+  
+      setOpen(false);
+    };
+    return (
+      <Box>
+        <Snackbar 
+            open={open} 
+            autoHideDuration={6000} 
+            onClose={handleClose}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        {socketConn 
+        ? 
+          <Alert severity="success">
+            Successfully connected to websocket!
+          </Alert>
+        :
+          <Alert severity="error">
+            There was a problem connecting to websocket!
+          </Alert>
+        }
+        </Snackbar>
+      </Box>
+    )
+}
+
+const App = () => {
   const [text, setText] = useState("");
   const [blockchain, setBlockChain] = useState([]);
+  const [okConn, setOkConn] = useState(false)
 
   let connect = () => {
     socket.onopen = () => {
       console.log("Successfully Connected");
+      setOkConn(true)
     };
 
     socket.onmessage = (msg) => {
@@ -26,6 +68,7 @@ function App() {
 
     socket.onerror = (error) => {
       console.log("Socket Error: ", error);
+      setOkConn(false)
     };
   };
 
@@ -52,6 +95,7 @@ function App() {
   return (
     <Box margin="10px">
       <header>
+        <ConnectionStatAlert socketConnection={okConn} />
         <Box>
           <Typography variant="h4">Enter a new block</Typography>
         </Box>
@@ -66,7 +110,7 @@ function App() {
         </div>
         <div>
           <Button variant="contained" onClick={sendMsg}>
-            new block
+            send
           </Button>
         </div>
         <div>
