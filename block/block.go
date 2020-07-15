@@ -38,7 +38,7 @@ func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 	hash := hash256(index, previousHash, timeStamp, data)
 
 	newBlock := &Block{
-		ID:           id, // generic ID, TODO: creeate algorithm
+		ID:           id,
 		Index:        index,
 		Timestamp:    timeStamp,
 		Data:         data,
@@ -56,8 +56,6 @@ func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 func (bc *Blockchain) IsValidateBlockChain() (valid bool, i int) {
 	valid = true
 	for i := 1; i < len(*bc); i++ {
-		fmt.Printf("current prev hash%v\n", (*bc)[i].PreviousHash)
-		fmt.Printf("prev hash%v\n", (*bc)[i-1].PreviousHash)
 		if (*bc)[i].PreviousHash != (*bc)[i-1].Hash {
 			valid = false
 			return valid, i

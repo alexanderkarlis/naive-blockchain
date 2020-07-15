@@ -32,7 +32,6 @@ export const BlockComponent = (props) => {
   const blockHighlight = props.block.Data === "GENESIS BLOCK" 
     ? {border: '2px solid green'} 
     : {border: '1px solid black'} 
-  console.log(blockHighlight)
 
   return (
     <Box border={blockHighlight} className={classes.root}>
