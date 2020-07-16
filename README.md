@@ -8,6 +8,7 @@ go run main.go
 ```
 then `start client`
 ```sh
+npm install --prefix web
 npm run start --prefix web
 ```
 
