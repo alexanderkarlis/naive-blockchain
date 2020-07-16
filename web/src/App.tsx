@@ -52,7 +52,7 @@ const App = () => {
 
   let connect = () => {
     socket.onopen = () => {
-      console.log("Successfully Connected");
+      console.log("Successfully Connected"); 
       setOkConn(true)
     };
 

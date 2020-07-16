@@ -43,7 +43,7 @@ var (
 	addr         = flag.String("addr", "localhost:8080", "http service address")
 	genesisBlock = block.CreateGenesisBlock()
 	blockchain   = block.Blockchain{}
-	randomMsg    = make(chan []string)
+	msgs         = []string{}
 )
 
 // Client is the middleman between client and server.
@@ -63,15 +63,14 @@ func (c *Client) readPump() {
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		_, message, err := c.conn.ReadMessage()
+		// fmt.Println(string(message))
 		go func() {
-			fmt.Println("In slice update")
-			slc := <-randomMsg
-			fmt.Printf("slc: %v\n", slc)
-			sendSlc := append(slc, string(message))
-			randomMsg <- sendSlc
-
+			msgs = append(msgs, string(message))
+			log.Println("\nmsgs⏎")
+			for x := range msgs {
+				log.Printf("%v\n", msgs[x])
+			}
 		}()
-		fmt.Println(string(message))
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
@@ -80,7 +79,7 @@ func (c *Client) readPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		blockchain.AddNewBlockToBlockChain(string(message))
-		valid, index := blockchain.IsValidateBlockChain()
+		valid, index := blockchain.IsValidBlockChain()
 		if !valid {
 			panic(fmt.Sprintf("WARNING: Blockchain not valid at %+d", index))
 		}

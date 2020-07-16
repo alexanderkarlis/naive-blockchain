@@ -50,10 +50,10 @@ func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 	return *bc
 }
 
-// IsValidateBlockChain validates the active blockchain by checking previous hash
+// IsValidBlockChain validates the active blockchain by checking previous hash
 // against current 'previous hash'.
 // Returns valid (bool) and index of problem block in chain. (-1 if blockchain is ok.)
-func (bc *Blockchain) IsValidateBlockChain() (valid bool, i int) {
+func (bc *Blockchain) IsValidBlockChain() (valid bool, i int) {
 	valid = true
 	for i := 1; i < len(*bc); i++ {
 		if (*bc)[i].PreviousHash != (*bc)[i-1].Hash {
