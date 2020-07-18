@@ -2,13 +2,15 @@ package block
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"os/exec"
 	"strings"
 	"time"
-
-	"os/exec"
 )
+
+const ()
 
 // Blocks function interface
 type Blocks interface {
@@ -23,6 +25,8 @@ type Block struct {
 	PreviousHash string
 	Timestamp    int
 	Data         string
+	Difficulty   int
+	Nonce        int
 }
 
 // Blockchain is a slice of Blocks.
@@ -31,12 +35,12 @@ type Blockchain []Block
 // AddNewBlockToBlockChain returns a new instance of a single Block in the Blockchain.
 func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 	id := generateUUID()
-	index := 0
+	index := len(*bc)
 	previousHash := (*bc)[len(*bc)-1].Hash
 	timeStamp := generateTimeStamp()
 	data := d
-	hash := hash256(index, previousHash, timeStamp, data)
-
+	difficulty := 2
+	hash := findBlockHash(index, previousHash, timeStamp, data, difficulty)
 	newBlock := &Block{
 		ID:           id,
 		Index:        index,
@@ -44,10 +48,36 @@ func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
 		Data:         data,
 		Hash:         hash,
 		PreviousHash: previousHash,
+		Difficulty:   difficulty,
+		Nonce:        0,
 	}
 	*bc = append(*bc, *newBlock)
 
 	return *bc
+}
+
+func findBlockHash(index int, previousHash string, ts int, data string, difficulty int) string {
+	var hash string
+	nonce := 0
+	for {
+		hash = hash256(index, previousHash, ts, data, difficulty, nonce)
+		if hashMatchesDifficulty(hash, difficulty) {
+			fmt.Println(nonce)
+			fmt.Println(hash)
+			return hash
+		}
+		nonce++
+	}
+}
+
+func hashMatchesDifficulty(hash string, difficulty int) bool {
+	fmt.Println(hash)
+	hashBinary, err := hex.DecodeString(hash)
+	if err != nil {
+		fmt.Println("could not digest hash into binary")
+	}
+	requiredPrefix := strings.Repeat("0", difficulty)
+	return strings.HasPrefix(string(hashBinary), requiredPrefix)
 }
 
 // IsValidBlockChain validates the active blockchain by checking previous hash
@@ -68,7 +98,7 @@ func (bc *Blockchain) IsValidBlockChain() (valid bool, i int) {
 func CreateGenesisBlock() *Block {
 	timeStamp := generateTimeStamp()
 	data := "GENESIS BLOCK"
-	hash := hash256(0, "", timeStamp, data)
+	hash := "3e7f6189598ac7cdd024f5d07b1fb1fd18e1ce68a3986d44b36b97c2ecded8e0"
 
 	return &Block{
 		ID:           generateUUID(),
@@ -78,14 +108,6 @@ func CreateGenesisBlock() *Block {
 		Hash:         hash,
 		PreviousHash: "",
 	}
-}
-
-// CheckPreviousHash should be called as soon as any data on the block changes.
-func (b *Block) CheckPreviousHash() *Block {
-	newHash := hash256(b.Index, b.PreviousHash, b.Timestamp, b.Data)
-	b.Hash = string(newHash)
-	b.PreviousHash = b.Hash
-	return b
 }
 
 func generateTimeStamp() int {
@@ -102,8 +124,8 @@ func generateUUID() string {
 }
 
 // 256 Hashing func
-func hash256(index int, previousHash string, timestamp int, data string) string {
-	hashString := fmt.Sprintf("%d%s%d%s", index, previousHash, timestamp, data)
+func hash256(index int, previousHash string, timestamp int, data string, difficulty int, nonce int) string {
+	hashString := fmt.Sprintf("%d%s%d%s%d%d", index, previousHash, timestamp, data, difficulty, nonce)
 	sum := sha256.Sum256([]byte(hashString))
 	return fmt.Sprintf("%+x", sum[:])
 }

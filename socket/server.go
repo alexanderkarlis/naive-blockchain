@@ -13,22 +13,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// SocketServe function serves a basic form of the listening websocket.
-func SocketServe() {
-	blockchain = append(blockchain, *genesisBlock)
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
-	flag.Parse()
-	log.SetFlags(0)
-	hub := newHub()
-	go hub.run()
-	http.HandleFunc("/broadcast", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
-	})
-	log.Fatal(http.ListenAndServe(*addr, nil))
-}
-
 const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
@@ -53,6 +37,31 @@ type Client struct {
 	send chan []byte
 }
 
+// SocketServe function serves a basic form of the listening websocket.
+func SocketServe() {
+	blockchain = append(blockchain, *genesisBlock)
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true
+	}
+	flag.Parse()
+	log.SetFlags(0)
+	hub := newHub()
+	go hub.run()
+	go func() {
+		http.HandleFunc("/helloServer", helloServer)
+		log.Fatal(http.ListenAndServe("localhost:8081", nil))
+	}()
+	http.HandleFunc("/broadcast", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(hub, w, r)
+	})
+	log.Fatal(http.ListenAndServe(*addr, nil))
+
+}
+
+func helloServer(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello world!")
+}
+
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -63,7 +72,6 @@ func (c *Client) readPump() {
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		_, message, err := c.conn.ReadMessage()
-		// fmt.Println(string(message))
 		go func() {
 			msgs = append(msgs, string(message))
 			log.Println("\nmsgs⏎")
