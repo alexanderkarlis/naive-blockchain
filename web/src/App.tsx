@@ -20,7 +20,6 @@ const ConnectionStatAlert = (props) => {
       if (reason === 'clickaway') {
         return;
       }
-  
       setOpen(false);
     };
     return (
@@ -30,8 +29,7 @@ const ConnectionStatAlert = (props) => {
             autoHideDuration={6000} 
             onClose={handleClose}
             anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        {socketConn 
-        ? 
+        {socketConn ? 
           <Alert severity="success">
             Successfully connected to websocket!
           </Alert>
@@ -57,9 +55,10 @@ const App = () => {
     };
 
     socket.onmessage = (msg) => {
-      console.log("msg");
-      console.log(JSON.parse(msg.data));
-      setBlockChain(JSON.parse(msg.data));
+        console.log(msg)
+        console.log("msg", msg);
+        /* console.log(JSON.parse(msg.data)); */
+        /* setBlockChain(JSON.parse(msg.data)); */
     };
 
     socket.onclose = (event) => {
@@ -87,8 +86,9 @@ const App = () => {
 
   useEffect(() => {
     socket.onmessage = (msg) => {
-      console.log("msg");
-      setBlockChain(JSON.parse(msg.data));
+      console.log(msg.data)
+      console.log("msg", JSON.parse(msg.data));
+        setBlockChain(JSON.parse(msg.data));
     };
   });
 

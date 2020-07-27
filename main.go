@@ -8,5 +8,5 @@ import (
 var blockchain chan []block.Block
 
 func main() {
-	server.SocketServe()
+	server.Serve()
 }

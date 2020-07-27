@@ -3,14 +3,13 @@ package block
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
 	"strings"
 	"time"
 )
-
-const ()
 
 // Blocks function interface
 type Blocks interface {
@@ -31,6 +30,16 @@ type Block struct {
 
 // Blockchain is a slice of Blocks.
 type Blockchain []Block
+
+// BlockchainToBytes turns blockchain into a slice of bytes to broadcast across sockets.
+func (bc *Blockchain) BlockchainToBytes() []byte {
+	bSlice, err := json.Marshal(bc)
+	if err != nil {
+		log.Printf("Could not send blockchain to bytes. %v", err)
+		return []byte{}
+	}
+	return bSlice
+}
 
 // AddNewBlockToBlockChain returns a new instance of a single Block in the Blockchain.
 func (bc *Blockchain) AddNewBlockToBlockChain(d string) Blockchain {
@@ -62,8 +71,6 @@ func findBlockHash(index int, previousHash string, ts int, data string, difficul
 	for {
 		hash = hash256(index, previousHash, ts, data, difficulty, nonce)
 		if hashMatchesDifficulty(hash, difficulty) {
-			fmt.Println(nonce)
-			fmt.Println(hash)
 			return hash
 		}
 		nonce++
@@ -71,7 +78,6 @@ func findBlockHash(index int, previousHash string, ts int, data string, difficul
 }
 
 func hashMatchesDifficulty(hash string, difficulty int) bool {
-	fmt.Println(hash)
 	hashBinary, err := hex.DecodeString(hash)
 	if err != nil {
 		fmt.Println("could not digest hash into binary")

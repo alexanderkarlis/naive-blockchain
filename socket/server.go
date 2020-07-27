@@ -1,10 +1,10 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -21,13 +21,16 @@ const (
 )
 
 var (
-	newline      = []byte{'\n'}
-	space        = []byte{' '}
-	upgrader     = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
-	addr         = flag.String("addr", "localhost:8080", "http service address")
-	genesisBlock = block.CreateGenesisBlock()
-	blockchain   = block.Blockchain{}
-	msgs         = []string{}
+	newline       = []byte{'\n'}
+	space         = []byte{' '}
+	upgrader      = websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
+	addr          = flag.String("addr", "localhost:8080", "http service address")
+	genesisBlock  = block.CreateGenesisBlock()
+	blockchain    = block.Blockchain{}
+	msgs          = []string{}
+	msgBlockchain = []block.Block{}
+	a             = make(chan []string)
+	clientList    = []Client{}
 )
 
 // Client is the middleman between client and server.
@@ -37,8 +40,13 @@ type Client struct {
 	send chan []byte
 }
 
-// SocketServe function serves a basic form of the listening websocket.
-func SocketServe() {
+// BlockRequestData is a http request to add a block to the blockchain.
+type BlockRequestData struct {
+	Data string `json:"data"`
+}
+
+// Serve function serves a basic form of the listening websocket.
+func Serve() {
 	blockchain = append(blockchain, *genesisBlock)
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
@@ -48,7 +56,7 @@ func SocketServe() {
 	hub := newHub()
 	go hub.run()
 	go func() {
-		http.HandleFunc("/helloServer", helloServer)
+		http.HandleFunc("/blockdata", postBlockData)
 		log.Fatal(http.ListenAndServe("localhost:8081", nil))
 	}()
 	http.HandleFunc("/broadcast", func(w http.ResponseWriter, r *http.Request) {
@@ -58,45 +66,32 @@ func SocketServe() {
 
 }
 
-func helloServer(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello world!")
-}
-
-func (c *Client) readPump() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
-		_, message, err := c.conn.ReadMessage()
-		go func() {
-			msgs = append(msgs, string(message))
-			log.Println("\nmsgs⏎")
-			for x := range msgs {
-				log.Printf("%v\n", msgs[x])
-			}
-		}()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
-			}
-			break
-		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		blockchain.AddNewBlockToBlockChain(string(message))
-		valid, index := blockchain.IsValidBlockChain()
-		if !valid {
-			panic(fmt.Sprintf("WARNING: Blockchain not valid at %+d", index))
-		}
-		bSlice, _ := json.Marshal(blockchain)
-		c.hub.broadcast <- bSlice
+func postBlockData(w http.ResponseWriter, r *http.Request) {
+	var blockData BlockRequestData
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "could not process data correctly")
 	}
+
+	json.Unmarshal(reqBody, &blockData)
+	if blockData.Data == "" {
+		fmt.Fprintf(w, "data field is required in order to make a block request.")
+	}
+	blockchain.AddNewBlockToBlockChain(string(blockData.Data))
+	valid, index := blockchain.IsValidBlockChain()
+	if !valid {
+		panic(fmt.Sprintf("WARNING: Blockchain not valid at %+d", index))
+	}
+
+	go func(data string) {
+		bSlice, _ := json.Marshal(blockchain)
+		for _, c := range clientList {
+			c.send <- bSlice
+		}
+	}(blockData.Data)
 }
 
-func (c *Client) broadcast() {
+func (c *Client) broadcastAll() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -144,7 +139,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
-
-	go client.broadcast()
-	go client.readPump()
+	client.send <- blockchain.BlockchainToBytes()
+	clientList = append(clientList, *client)
+	go client.broadcastAll()
 }
