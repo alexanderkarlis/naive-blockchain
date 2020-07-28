@@ -1,16 +1,25 @@
 # Naive Blockchain
-### Simple blockchain implemenation with Go running the server and React on the client side. 
+#### Simple blockchain implementation with Go running the server and React running the socket connection to 'peers'. Based on [this](https://lhartikk.github.io/) 
 
-## Run
-`start server`
+### Run
+#### Start the server
 ```sh
 go run main.go
 ```
-then `start client`
+#### Then `start 'peer to peer' socket connection
 ```sh
 npm install --prefix web
 npm run start --prefix web
 ```
 
-## Todos
+#### Add a new block to the blockchain!
+```sh
+curl -X POST http://localhost:8080/blockdata -d "{\"data\": \"New block post!\"}"
+```
+
+#### Proof of work done by hard coded difficulty to 2.
+** leading hash must be lead by `difficulty * '0'` (padded number of times) ** 
+
+
+## Todo's!
 **lot's of TODO's left.**
