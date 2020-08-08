@@ -1,4 +1,4 @@
-# Naive Blockchain
+# Naive Blockchain (Deprecated, see [](https://github.com/alexanderkarlis/naivechain))
 #### Simple blockchain implementation with Go running the server and React running the socket connection to 'peers'. Based on naive [blockchain](https://lhartikk.github.io/) 
 
 ### Run
