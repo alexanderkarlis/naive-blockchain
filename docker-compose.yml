@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  client:
+    stdin_open: true
+    tty: true
+    build: client/
+    command: npm run start
+    ports:
+      - 3000:3000
+    environment:
+      PUBLIC_URL: naive-blockchain_server_1
+    networks:
+      testing_net:
+          ipv4_address: 172.28.1.1
+  server:
+    build: server/
+    command: ./naive-blockchain
+    expose:
+      - "8080"
+      - "8081"
+    ports:
+      - 8080:8080
+    networks:
+      testing_net:
+          ipv4_address: 172.28.1.2
+networks:
+  testing_net:
+      ipam:
+          driver: default
+          config:
+              - subnet: 172.28.0.0/16

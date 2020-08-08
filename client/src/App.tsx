@@ -6,15 +6,16 @@ import MuiAlert, { AlertProps } from '@material-ui/lab/Alert';
 import { BlockComponent } from "./block";
 import "./App.css";
 
-let socket = new WebSocket("ws://localhost:8080/broadcast")
-console.log("inside the code file")
+console.log("ALL ENV VARS: ", process.env.SOCKET_URL)
+let socketUrl = process.env.SOCKET_URL
+
+let socket = new WebSocket(`ws://${socketUrl}:8080/broadcast`)
+
 const Alert = (props: AlertProps) => {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
 
 const ConnectionStatAlert = (props) => {
-    console.log("inside the connnection status file")
-
     let socketConn = props.socketConnection
     const [open, setOpen] = useState(true);
 
@@ -58,9 +59,6 @@ const App = () => {
 
     socket.onmessage = (msg) => {
         console.log(msg)
-        console.log("msg", msg);
-        /* console.log(JSON.parse(msg.data)); */
-        /* setBlockChain(JSON.parse(msg.data)); */
     };
 
     socket.onclose = (event) => {
@@ -88,9 +86,7 @@ const App = () => {
 
   useEffect(() => {
     socket.onmessage = (msg) => {
-      console.log(msg.data)
-      console.log("msg", JSON.parse(msg.data));
-        setBlockChain(JSON.parse(msg.data));
+      setBlockChain(JSON.parse(msg.data));
     };
   });
 

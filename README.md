@@ -1,7 +1,12 @@
 # Naive Blockchain
-#### Simple blockchain implementation with Go running the server and React running the socket connection to 'peers'. Based on [this](https://lhartikk.github.io/) 
+#### Simple blockchain implementation with Go running the server and React running the socket connection to 'peers'. Based on naive [blockchain](https://lhartikk.github.io/) 
 
 ### Run
+#### export socket ip address
+```sh
+(fish) -> set SOCKET_URL = xxx.xxx.x.xx
+```
+
 #### Start the server
 ```sh
 go run main.go
